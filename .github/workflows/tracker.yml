@@ -7,7 +7,12 @@ name: h1b-slot-tracker
 on:
   schedule:
     - cron: "*/5 * * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: "Send a test message to your alert channels"
+        type: boolean
+        default: false
 
 concurrency:
   group: h1b-slot-tracker
@@ -45,7 +50,11 @@ jobs:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: |
           if [ ! -f config.toml ]; then cp config.example.toml config.toml; fi
-          python -m h1b_tracker --config config.toml run
+          if [ "${{ inputs.test_alert }}" = "true" ]; then
+            python -m h1b_tracker --config config.toml test-alert
+          else
+            python -m h1b_tracker --config config.toml run
+          fi
 
       - name: Save state
         if: always()
