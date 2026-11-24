@@ -63,7 +63,19 @@ class ClassifyTests(unittest.TestCase):
     def verdicts(self):
         return {k: cli.classify(r, self.cfg, NOW) for k, r in self.rows.items()}
 
-    def test_defaults(self):
+    def test_defaults_alert_on_future_dates_marked_suspect(self):
+        v = self.verdicts()
+        self.assertEqual(v["5/12/2027, 4:11:00 PM5/12/2027"], "alert")
+        self.assertEqual(v["11/23/2026, 12:38:00 PM4/19/2027"], "alert")
+        sus = self.rows["5/12/2027, 4:11:00 PM5/12/2027"]
+        ok = self.rows["11/23/2026, 12:38:00 PM4/19/2027"]
+        self.assertTrue(cli.suspect_date(sus, self.cfg, NOW))
+        self.assertFalse(cli.suspect_date(ok, self.cfg, NOW))
+        _, body, _ = cli.format_alert([sus, ok], self.cfg, NOW)
+        self.assertEqual(body.count("SUSPECT"), 1)
+
+    def test_skip_future_reports_option(self):
+        self.cfg.skip_future_reports = True
         v = self.verdicts()
         self.assertTrue(v["5/12/2027, 4:11:00 PM5/12/2027"].startswith("reported time is in the future"))
         self.assertTrue(v["11/30/2026, 1:19:00 PM12/2/2026"].startswith("reported time is in the future"))
@@ -131,7 +143,14 @@ class RunTests(unittest.TestCase):
     def test_alert_existing_skips_bad_rows(self):
         self.run_with({"hyderabad": read("hyderabad_h1b.html")}, alert_existing=True)
         self.assertEqual(len(self.n.sent), 1)
-        self.assertIn("2 new H1B slot reports", self.n.sent[0][0])  # the two 11/23 biometrics rows
+        # two good 11/23 rows plus three future-dated rows, which alert marked SUSPECT
+        self.assertIn("5 new H1B slot reports", self.n.sent[0][0])
+        self.assertEqual(self.n.sent[0][1].count("SUSPECT"), 3)
+
+    def test_alert_existing_skips_bad_rows_when_asked(self):
+        self.cfg.skip_future_reports = True
+        self.run_with({"hyderabad": read("hyderabad_h1b.html")}, alert_existing=True)
+        self.assertIn("2 new H1B slot reports", self.n.sent[0][0])
 
     def test_failed_send_retries_next_run(self):
         class Broken(notify.Notifier):

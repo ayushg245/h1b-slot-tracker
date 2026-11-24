@@ -19,7 +19,7 @@ class Config:
     appointment_types: list[str] = field(default_factory=lambda: ["dropbox", "interview", "biometrics"])
     min_slots: int = 1
     skip_past_availability: bool = True
-    skip_future_reports: bool = True
+    skip_future_reports: bool = False
     future_tolerance_hours: float = 12.0
     max_report_age_hours: float = 48.0
     alert_channels: list[str] = field(default_factory=lambda: ["console"])

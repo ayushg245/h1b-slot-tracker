@@ -61,6 +61,11 @@ def classify(r: SlotReport, cfg: Config, now: datetime) -> str:
     return "alert"
 
 
+def suspect_date(r: SlotReport, cfg: Config, now: datetime) -> bool:
+    """True when the report's own 'reported' time is impossibly far in the future."""
+    return bool(r.reported_at and r.reported_at > now + timedelta(hours=cfg.future_tolerance_hours))
+
+
 def _fmt_dt(dt: datetime | None, raw: str, tz: ZoneInfo) -> str:
     if not dt:
         return raw
@@ -68,15 +73,17 @@ def _fmt_dt(dt: datetime | None, raw: str, tz: ZoneInfo) -> str:
     return f"{dt:%b} {dt.day} {dt:%H:%M} UTC ({local.strftime('%I:%M %p').lstrip('0')} {local.tzname()})"
 
 
-def format_alert(new: list[SlotReport], cfg: Config) -> tuple[str, str, str]:
+def format_alert(new: list[SlotReport], cfg: Config, now: datetime | None = None) -> tuple[str, str, str]:
     tz = ZoneInfo(cfg.display_timezone)
+    now = now or datetime.now(timezone.utc)
     lines = []
     for r in sorted(new, key=lambda x: (x.consulate, x.appointment_type, x.availability_raw)):
         d = r.availability_date
         when = f"{d:%a %b} {d.day}, {d.year}" if d else r.availability_raw
         slots = f"{r.slots} slot{'s' if r.slots != 1 else ''}" if r.slots is not None else "slots"
+        flag = " (SUSPECT: reported date is in the future, may be a typo)" if suspect_date(r, cfg, now) else ""
         lines.append(f"- {r.consulate} {r.appointment_type}: {slots} on {when}, "
-                     f"reported {_fmt_dt(r.reported_at, r.reported_raw, tz)}")
+                     f"reported {_fmt_dt(r.reported_at, r.reported_raw, tz)}{flag}")
     if len(new) == 1:
         r = new[0]
         title = f"{r.visa} {r.appointment_type} slot reported: {r.consulate}"
@@ -114,7 +121,7 @@ def run_once(cfg: Config, *, dry_run: bool = False, alert_existing: bool = False
             log.info("First run: remembered %d existing report(s) without alerting. "
                      "From now on only new reports alert.", len(reports))
         elif fresh:
-            title, body, url = format_alert(fresh, cfg)
+            title, body, url = format_alert(fresh, cfg, now)
             if dry_run:
                 print(f"[dry run] would alert:\n{title}\n{body}")
                 sent = True
@@ -153,7 +160,8 @@ def cmd_check(cfg: Config) -> int:
     tz = ZoneInfo(cfg.display_timezone)
     for r in reports:
         print(f"{r.consulate:10} {r.appointment_type:10} avail={r.availability_raw:11} "
-              f"slots={r.slots!s:3} reported={_fmt_dt(r.reported_at, r.reported_raw, tz):34} -> {classify(r, cfg, now)}")
+              f"slots={r.slots!s:3} reported={_fmt_dt(r.reported_at, r.reported_raw, tz):34} -> {classify(r, cfg, now)}"
+              f"{' (suspect date)' if suspect_date(r, cfg, now) else ''}")
     if not reports:
         print("No rows on any page (pages that say 'No slot activity' are normal).")
     for c, m, _ in problems:

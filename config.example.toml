@@ -14,9 +14,10 @@ min_slots = 1
 # Skip reports for slot dates that have already passed.
 skip_past_availability = true
 
-# Some community reports carry impossible future "reported" times. Skip those
-# that are more than this many hours ahead of now.
-skip_future_reports = true
+# Some community reports carry impossible future "reported" times (often a typo).
+# false = still alert on them, marked SUSPECT. true = skip them.
+# "Future" means more than future_tolerance_hours ahead of now.
+skip_future_reports = false
 future_tolerance_hours = 12
 
 # Don't alert on reports older than this (they've almost surely been taken).

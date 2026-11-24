@@ -28,8 +28,10 @@ Built-in filters (all in `config.toml`):
 - **Appointment types:** dropbox, interview, biometrics (pick any).
 - **Bad timestamps:** some community reports carry impossible future "reported"
   times (on Nov 23, 2026 Hyderabad showed rows "reported" in May 2027). Rows
-  more than 12 hours in the future are skipped. The 12 hours of slack covers
-  reports that look like India time labelled as UTC.
+  more than 12 hours in the future still alert, marked SUSPECT, since the slot
+  may be real and only the date mistyped. Set `skip_future_reports = true` to
+  skip them instead. The 12 hours of slack covers reports that look like India
+  time labelled as UTC.
 - **Past slot dates** and **reports older than 48 hours** are skipped.
 
 ### Sources left out
