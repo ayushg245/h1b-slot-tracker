@@ -1,0 +1,38 @@
+# Copy to config.toml and edit. Secrets (topic, tokens, passwords) go in environment
+# variables, never in this file. See README.md.
+
+# Any of: mumbai, hyderabad, chennai, new-delhi, kolkata
+consulates = ["mumbai", "hyderabad", "chennai", "new-delhi", "kolkata"]
+
+visa = "H1B"
+
+# Any of: dropbox, interview, biometrics
+appointment_types = ["dropbox", "interview", "biometrics"]
+
+min_slots = 1
+
+# Skip reports for slot dates that have already passed.
+skip_past_availability = true
+
+# Some community reports carry impossible future "reported" times. Skip those
+# that are more than this many hours ahead of now.
+skip_future_reports = true
+future_tolerance_hours = 12
+
+# Don't alert on reports older than this (they've almost surely been taken).
+max_report_age_hours = 48
+
+# Any of: console, ntfy, telegram, email
+alert_channels = ["console", "ntfy"]
+ntfy_priority = "high"   # min, low, default, high, urgent
+
+state_file = "state/slots.sqlite3"
+
+# Used by "loop" only. Never lower than 180 seconds.
+interval_seconds = 300
+
+display_timezone = "America/New_York"
+
+# "http" (default, light) or "browser" (headless Chromium via Playwright, only if
+# "check" ever reports that the page layout changed or is drawn by JavaScript).
+fetch_mode = "http"
