@@ -6,7 +6,8 @@ name: h1b-slot-tracker
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # Offset from :00 because GitHub drops or delays many top-of-hour schedules.
+    - cron: "3-58/5 * * * *"
   workflow_dispatch:
     inputs:
       test_alert:
